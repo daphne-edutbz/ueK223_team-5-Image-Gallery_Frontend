@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+    "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "allowJs": true,
+        "checkJs": false,
+        "jsx": "react",
+        "target": "es5",
+        "lib": ["es5", "dom"],
+        "types": ["cypress", "node"]
+},
+    "include": ["**/*.ts"]
+}
