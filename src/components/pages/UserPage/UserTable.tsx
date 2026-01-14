@@ -18,11 +18,11 @@ const UserTable = () => {
   }, []);
 
   const handleAdd = () => {
-    navigate('../useredit/');
+    navigate('../user/edit/');
   };
 
   const handleEdit = (id: string) => {
-    navigate('../useredit/' + id);
+    navigate('../user/edit/' + id);
   };
 
   const handleDelete = (id: string) => {

@@ -91,7 +91,7 @@ const UserForm = ({ user, submitActionHandler }: UserProps) => {
             variant='contained'
             color='error'
             onClick={() => {
-              navigate('/users');
+              navigate('/user');
             }}
           >
             Cancel
