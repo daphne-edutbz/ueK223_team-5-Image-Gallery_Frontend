@@ -41,7 +41,7 @@ const Login = () => {
     setErrorMessage('');
     login(values.email.toLowerCase(), values.password)
         .then(() => {
-          navigate('/user');
+          navigate('/gallery');
         })
         .catch((error) => {
           if (
