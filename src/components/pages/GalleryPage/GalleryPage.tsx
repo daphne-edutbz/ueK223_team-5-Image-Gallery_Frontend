@@ -16,16 +16,28 @@ import {
     Tooltip,
     Skeleton,
     Tabs,
-    Tab
+    Tab,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    SelectChangeEvent
 } from '@mui/material';
 import {
     CalendarToday,
     PhotoLibrary,
-    Person
+    Person,
+    SortRounded,
+    FilterList
 } from '@mui/icons-material';
 import PostService, { ImagePost } from '../../../Services/PostService';
+import UserService from '../../../Services/UserService';
+import { User } from '../../../types/models/User.model';
 
 const POSTS_PER_PAGE = 12;
+
+// Sortierungs-Optionen
+type SortOption = 'createdAt,desc' | 'createdAt,asc' | 'likes,desc' | 'likes,asc';
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <Box
@@ -55,12 +67,18 @@ const GalleryPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [posts, setPosts] = useState<ImagePost[]>([]);
+    const [allPosts, setAllPosts] = useState<ImagePost[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
     const [likedPostIds, setLikedPostIds] = useState<Record<string, boolean>>({});
+
+    // Sortierung und Filter State
+    const [sortOption, setSortOption] = useState<SortOption>('createdAt,desc');
+    const [authorFilter, setAuthorFilter] = useState<string>('all');
+    const [authors, setAuthors] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
 
     // Aktueller Tab basierend auf URL
     const currentTab = location.pathname === '/gallery/my-posts' ? 1 : 0;
@@ -73,23 +91,110 @@ const GalleryPage = () => {
         }
     };
 
+    // Lade alle Posts und Autoren einmalig
+    useEffect(() => {
+        loadAllPostsAndAuthors();
+    }, []);
+
+    // Lade Posts bei Änderung von Seite, Sortierung oder Filter
     useEffect(() => {
         loadPosts();
-    }, [page]);
+    }, [page, sortOption, authorFilter, allPosts]);
+
+    // Handler für Sortierung und Filter
+    const handleSortChange = (event: SelectChangeEvent) => {
+        setSortOption(event.target.value as SortOption);
+        setPage(1);
+    };
+
+    const handleAuthorFilterChange = (event: SelectChangeEvent) => {
+        setAuthorFilter(event.target.value);
+        setPage(1);
+    };
+
+    const loadAllPostsAndAuthors = async () => {
+        try {
+            // Lade alle Posts
+            const postsResponse = await PostService.getAllPosts({
+                page: 0,
+                size: 1000,
+                sort: 'createdAt,desc'
+            });
+            const allPostsData = postsResponse.data.content;
+            setAllPosts(allPostsData);
+
+            // Lade alle Benutzer
+            const usersResponse = await UserService.getAllUsers();
+            const allUsers: User[] = usersResponse.data;
+
+            // Extrahiere eindeutige Autor-IDs aus Posts
+            const uniqueAuthorIds = [...new Set(allPostsData.map(post => post.authorId))];
+
+            // Mappe Autor-IDs zu Benutzernamen
+            const authorsWithNames = uniqueAuthorIds
+                .map(authorId => {
+                    const user = allUsers.find(u => u.id === authorId);
+                    if (user) {
+                        return {
+                            id: authorId,
+                            firstName: user.firstName,
+                            lastName: user.lastName
+                        };
+                    }
+                    return null;
+                })
+                .filter((author): author is { id: string; firstName: string; lastName: string } => author !== null)
+                .sort((a, b) => a.lastName.localeCompare(b.lastName));
+
+            setAuthors(authorsWithNames);
+        } catch (err) {
+            console.error('Fehler beim Laden der Autoren:', err);
+        }
+    };
+
+    const sortPosts = (postsToSort: ImagePost[], sort: SortOption): ImagePost[] => {
+        const sorted = [...postsToSort];
+        switch (sort) {
+            case 'createdAt,desc':
+                return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            case 'createdAt,asc':
+                return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+            case 'likes,desc':
+                return sorted.sort((a, b) => ((b as any).likes || 0) - ((a as any).likes || 0));
+            case 'likes,asc':
+                return sorted.sort((a, b) => ((a as any).likes || 0) - ((b as any).likes || 0));
+            default:
+                return sorted;
+        }
+    };
 
     const loadPosts = async () => {
         try {
             setLoading(true);
-            const response = await PostService.getAllPosts({
-                page: page - 1,
-                size: POSTS_PER_PAGE,
-                sort: 'createdAt,desc'
-            });
 
-            const pageData = response.data;
-            setPosts(pageData.content);
-            setTotalPages(pageData.totalPages);
-            setTotalElements(pageData.totalElements);
+            // Wenn nach Autor gefiltert wird, filtern wir im Frontend
+            if (authorFilter !== 'all') {
+                const filteredPosts = allPosts.filter(post => post.authorId === authorFilter);
+                const sortedPosts = sortPosts(filteredPosts, sortOption);
+                const startIndex = (page - 1) * POSTS_PER_PAGE;
+                const paginatedPosts = sortedPosts.slice(startIndex, startIndex + POSTS_PER_PAGE);
+
+                setPosts(paginatedPosts);
+                setTotalElements(filteredPosts.length);
+                setTotalPages(Math.ceil(filteredPosts.length / POSTS_PER_PAGE));
+            } else {
+                // Ohne Autor-Filter: Backend-Pagination nutzen
+                const response = await PostService.getAllPosts({
+                    page: page - 1,
+                    size: POSTS_PER_PAGE,
+                    sort: sortOption
+                });
+
+                const pageData = response.data;
+                setPosts(pageData.content);
+                setTotalPages(pageData.totalPages);
+                setTotalElements(pageData.totalElements);
+            }
             setError(null);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Fehler beim Laden der Posts');
@@ -226,6 +331,73 @@ const GalleryPage = () => {
                         }}
                     />
                 </Tabs>
+            </Box>
+
+            {/* Filter und Sortierung */}
+            <Box sx={{
+                display: 'flex',
+                gap: 2,
+                mb: 3,
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                {/* Sortierung */}
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel id="sort-label">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <SortRounded fontSize="small" />
+                            Sortierung
+                        </Box>
+                    </InputLabel>
+                    <Select
+                        labelId="sort-label"
+                        value={sortOption}
+                        label="Sortierung"
+                        onChange={handleSortChange}
+                    >
+                        <MenuItem value="createdAt,desc">Neueste zuerst</MenuItem>
+                        <MenuItem value="createdAt,asc">Älteste zuerst</MenuItem>
+                        <MenuItem value="likes,desc">Meiste Likes</MenuItem>
+                        <MenuItem value="likes,asc">Wenigste Likes</MenuItem>
+                    </Select>
+                </FormControl>
+
+                {/* Autor-Filter */}
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel id="author-filter-label">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <FilterList fontSize="small" />
+                            Nach Autor filtern
+                        </Box>
+                    </InputLabel>
+                    <Select
+                        labelId="author-filter-label"
+                        value={authorFilter}
+                        label="Nach Autor filtern"
+                        onChange={handleAuthorFilterChange}
+                    >
+                        <MenuItem value="all">Alle Autoren</MenuItem>
+                        {authors.map(author => (
+                            <MenuItem key={author.id} value={author.id}>
+                                {author.firstName} {author.lastName}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                {/* Aktiver Filter Chip */}
+                {authorFilter !== 'all' && (
+                    <Chip
+                        label={`Filter: ${(() => {
+                            const author = authors.find(a => a.id === authorFilter);
+                            return author ? `${author.firstName} ${author.lastName}` : 'Autor';
+                        })()}`}
+                        onDelete={() => setAuthorFilter('all')}
+                        color="primary"
+                        variant="outlined"
+                    />
+                )}
             </Box>
 
             {/* Empty State */}
