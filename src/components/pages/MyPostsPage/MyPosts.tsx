@@ -99,6 +99,14 @@ const MyPosts = () => {
         postId: string | null;
     }>({ open: false, postId: null });
 
+    // Form Validation State
+    const [formErrors, setFormErrors] = useState<{
+        imageUrl: string;
+        description: string;
+    }>({ imageUrl: '', description: '' });
+
+    const MAX_DESCRIPTION_LENGTH = 200;
+
     // Aktueller Tab basierend auf URL
     const currentTab = location.pathname === '/gallery/my-posts' ? 1 : 0;
 
@@ -226,6 +234,39 @@ const MyPosts = () => {
         setDialogOpen(false);
         setEditingPost(null);
         setFormData({ imageUrl: '', description: '' });
+        setFormErrors({ imageUrl: '', description: '' });
+    };
+
+    const isValidUrl = (url: string): boolean => {
+        try {
+            const parsedUrl = new URL(url);
+            return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    };
+
+    const validateForm = (): boolean => {
+        const errors = { imageUrl: '', description: '' };
+        let isValid = true;
+
+        // Pflichtfeld: Bild-URL
+        if (!formData.imageUrl.trim()) {
+            errors.imageUrl = 'Bild-URL ist ein Pflichtfeld';
+            isValid = false;
+        } else if (!isValidUrl(formData.imageUrl.trim())) {
+            errors.imageUrl = 'Bitte gib eine gültige URL ein (z.B. https://example.com/bild.jpg)';
+            isValid = false;
+        }
+
+        // Beschreibung: maximale Länge
+        if (formData.description.length > MAX_DESCRIPTION_LENGTH) {
+            errors.description = `Beschreibung darf maximal ${MAX_DESCRIPTION_LENGTH} Zeichen lang sein`;
+            isValid = false;
+        }
+
+        setFormErrors(errors);
+        return isValid;
     };
 
     const handleFormChange = (field: keyof CreatePostData, value: string) => {
@@ -233,8 +274,7 @@ const MyPosts = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.imageUrl.trim()) {
-            setSnackbar({ open: true, message: 'Bitte gib eine Bild-URL ein', severity: 'error' });
+        if (!validateForm()) {
             return;
         }
 
@@ -671,10 +711,17 @@ const MyPosts = () => {
                         label="Bild-URL"
                         fullWidth
                         value={formData.imageUrl}
-                        onChange={(e) => handleFormChange('imageUrl', e.target.value)}
+                        onChange={(e) => {
+                            handleFormChange('imageUrl', e.target.value);
+                            if (formErrors.imageUrl) {
+                                setFormErrors(prev => ({ ...prev, imageUrl: '' }));
+                            }
+                        }}
                         placeholder="https://example.com/bild.jpg"
                         sx={{ mb: 3, mt: 1 }}
                         required
+                        error={!!formErrors.imageUrl}
+                        helperText={formErrors.imageUrl}
                     />
                     <TextField
                         label="Beschreibung"
@@ -682,8 +729,15 @@ const MyPosts = () => {
                         multiline
                         rows={3}
                         value={formData.description}
-                        onChange={(e) => handleFormChange('description', e.target.value)}
+                        onChange={(e) => {
+                            handleFormChange('description', e.target.value);
+                            if (formErrors.description) {
+                                setFormErrors(prev => ({ ...prev, description: '' }));
+                            }
+                        }}
                         placeholder="Beschreibe dein Bild..."
+                        error={!!formErrors.description}
+                        helperText={formErrors.description || `${formData.description.length}/${MAX_DESCRIPTION_LENGTH} Zeichen`}
                     />
 
                     {/* Preview */}
