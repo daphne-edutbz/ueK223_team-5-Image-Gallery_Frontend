@@ -6,7 +6,6 @@ export interface ImagePost {
     imageUrl: string;
     description?: string;
     authorId: string;      // Backend: authorId (nicht userId)
-    likeCount: number;     // Backend: likeCount (nicht likes)
     createdAt: string;
 }
 
