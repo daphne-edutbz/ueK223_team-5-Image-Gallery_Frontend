@@ -23,7 +23,8 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Fab
+    Fab,
+    Snackbar
 } from '@mui/material';
 import {
     Delete,
@@ -84,6 +85,27 @@ const MyPosts = () => {
         description: ''
     });
     const [saving, setSaving] = useState(false);
+
+    // Snackbar State
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: 'success' | 'error';
+    }>({ open: false, message: '', severity: 'success' });
+
+    // Delete Confirmation Dialog State
+    const [deleteDialog, setDeleteDialog] = useState<{
+        open: boolean;
+        postId: string | null;
+    }>({ open: false, postId: null });
+
+    // Form Validation State
+    const [formErrors, setFormErrors] = useState<{
+        imageUrl: string;
+        description: string;
+    }>({ imageUrl: '', description: '' });
+
+    const MAX_DESCRIPTION_LENGTH = 200;
 
     // Aktueller Tab basierend auf URL
     const currentTab = location.pathname === '/gallery/my-posts' ? 1 : 0;
@@ -148,15 +170,22 @@ const MyPosts = () => {
         }
     };
 
-    const handleDelete = async (postId: string) => {
-        if (!window.confirm('Möchtest du diesen Post wirklich löschen?')) {
-            return;
-        }
+    const openDeleteDialog = (postId: string) => {
+        setDeleteDialog({ open: true, postId });
+    };
+
+    const closeDeleteDialog = () => {
+        setDeleteDialog({ open: false, postId: null });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteDialog.postId) return;
 
         try {
-            await PostService.deletePost(postId);
-            setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+            await PostService.deletePost(deleteDialog.postId);
+            setPosts(prevPosts => prevPosts.filter(post => post.id !== deleteDialog.postId));
             setTotalElements(prev => prev - 1);
+            setSnackbar({ open: true, message: 'Post erfolgreich gelöscht', severity: 'success' });
 
             // Wenn letzte Karte auf der Seite gelöscht, zur vorherigen Seite
             if (posts.length === 1 && page > 1) {
@@ -166,7 +195,9 @@ const MyPosts = () => {
             }
         } catch (err) {
             console.error('Fehler beim Löschen:', err);
-            alert('Fehler beim Löschen des Posts');
+            setSnackbar({ open: true, message: 'Fehler beim Löschen des Posts', severity: 'error' });
+        } finally {
+            closeDeleteDialog();
         }
     };
 
@@ -203,6 +234,39 @@ const MyPosts = () => {
         setDialogOpen(false);
         setEditingPost(null);
         setFormData({ imageUrl: '', description: '' });
+        setFormErrors({ imageUrl: '', description: '' });
+    };
+
+    const isValidUrl = (url: string): boolean => {
+        try {
+            const parsedUrl = new URL(url);
+            return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    };
+
+    const validateForm = (): boolean => {
+        const errors = { imageUrl: '', description: '' };
+        let isValid = true;
+
+        // Pflichtfeld: Bild-URL
+        if (!formData.imageUrl.trim()) {
+            errors.imageUrl = 'Bild-URL ist ein Pflichtfeld';
+            isValid = false;
+        } else if (!isValidUrl(formData.imageUrl.trim())) {
+            errors.imageUrl = 'Bitte gib eine gültige URL ein (z.B. https://example.com/bild.jpg)';
+            isValid = false;
+        }
+
+        // Beschreibung: maximale Länge
+        if (formData.description.length > MAX_DESCRIPTION_LENGTH) {
+            errors.description = `Beschreibung darf maximal ${MAX_DESCRIPTION_LENGTH} Zeichen lang sein`;
+            isValid = false;
+        }
+
+        setFormErrors(errors);
+        return isValid;
     };
 
     const handleFormChange = (field: keyof CreatePostData, value: string) => {
@@ -210,8 +274,7 @@ const MyPosts = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.imageUrl.trim()) {
-            alert('Bitte gib eine Bild-URL ein');
+        if (!validateForm()) {
             return;
         }
 
@@ -221,16 +284,18 @@ const MyPosts = () => {
             if (editingPost) {
                 // Update existing post
                 await PostService.updatePost(editingPost.id, formData);
+                setSnackbar({ open: true, message: 'Post erfolgreich aktualisiert', severity: 'success' });
             } else {
                 // Create new post
                 await PostService.createPost(formData);
+                setSnackbar({ open: true, message: 'Post erfolgreich erstellt', severity: 'success' });
             }
 
             closeDialog();
             loadMyPosts();
         } catch (err: any) {
             console.error('Fehler beim Speichern:', err);
-            alert(err.response?.data?.message || 'Fehler beim Speichern');
+            setSnackbar({ open: true, message: err.response?.data?.message || 'Fehler beim Speichern', severity: 'error' });
         } finally {
             setSaving(false);
         }
@@ -520,7 +585,7 @@ const MyPosts = () => {
                                         </Tooltip>
                                         <Tooltip title="Löschen">
                                             <IconButton
-                                                onClick={() => handleDelete(post.id)}
+                                                onClick={() => openDeleteDialog(post.id)}
                                                 sx={{
                                                     color: '#999',
                                                     '&:hover': {
@@ -646,10 +711,17 @@ const MyPosts = () => {
                         label="Bild-URL"
                         fullWidth
                         value={formData.imageUrl}
-                        onChange={(e) => handleFormChange('imageUrl', e.target.value)}
+                        onChange={(e) => {
+                            handleFormChange('imageUrl', e.target.value);
+                            if (formErrors.imageUrl) {
+                                setFormErrors(prev => ({ ...prev, imageUrl: '' }));
+                            }
+                        }}
                         placeholder="https://example.com/bild.jpg"
                         sx={{ mb: 3, mt: 1 }}
                         required
+                        error={!!formErrors.imageUrl}
+                        helperText={formErrors.imageUrl}
                     />
                     <TextField
                         label="Beschreibung"
@@ -657,8 +729,15 @@ const MyPosts = () => {
                         multiline
                         rows={3}
                         value={formData.description}
-                        onChange={(e) => handleFormChange('description', e.target.value)}
+                        onChange={(e) => {
+                            handleFormChange('description', e.target.value);
+                            if (formErrors.description) {
+                                setFormErrors(prev => ({ ...prev, description: '' }));
+                            }
+                        }}
                         placeholder="Beschreibe dein Bild..."
+                        error={!!formErrors.description}
+                        helperText={formErrors.description || `${formData.description.length}/${MAX_DESCRIPTION_LENGTH} Zeichen`}
                     />
 
                     {/* Preview */}
@@ -702,6 +781,54 @@ const MyPosts = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+                open={deleteDialog.open}
+                onClose={closeDeleteDialog}
+                PaperProps={{
+                    sx: { borderRadius: 3, p: 1 }
+                }}
+            >
+                <DialogTitle sx={{ pb: 1 }}>
+                    Post löschen?
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary">
+                        Bist du sicher, dass du diesen Post löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button onClick={closeDeleteDialog} color="inherit">
+                        Abbrechen
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={confirmDelete}
+                        color="error"
+                        sx={{ px: 3 }}
+                    >
+                        Löschen
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar für Benachrichtigungen */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 };

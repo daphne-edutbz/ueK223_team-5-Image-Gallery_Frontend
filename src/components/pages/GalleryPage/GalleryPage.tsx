@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import PostService, { ImagePost } from '../../../Services/PostService';
 
-const POSTS_PER_PAGE = 10;
+const POSTS_PER_PAGE = 12;
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <Box
