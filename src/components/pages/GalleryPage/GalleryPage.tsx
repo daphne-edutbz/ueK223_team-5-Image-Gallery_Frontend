@@ -19,8 +19,6 @@ import {
     Tab
 } from '@mui/material';
 import {
-    Favorite,
-    FavoriteBorder,
     CalendarToday,
     PhotoLibrary,
     Person
@@ -28,6 +26,30 @@ import {
 import PostService, { ImagePost } from '../../../Services/PostService';
 
 const POSTS_PER_PAGE = 10;
+
+const HeartIcon = ({ filled }: { filled: boolean }) => (
+    <Box
+        component="svg"
+        viewBox="0 0 24 24"
+        sx={{ width: 22, height: 22, display: 'block' }}
+        aria-hidden="true"
+    >
+        {filled ? (
+            <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.09 4.81 13.76 4 15.5 4 18 4 20 6 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                fill="currentColor"
+            />
+        ) : (
+            <path
+                d="M16.5 4c-1.74 0-3.41.81-4.5 2.09C10.91 4.81 9.24 4 7.5 4 5 4 3 6 3 8.5c0 3.2 2.86 5.86 7.55 10.14L12 20.05l1.45-1.41C18.14 14.36 21 11.7 21 8.5 21 6 19 4 16.5 4z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+            />
+        )}
+    </Box>
+);
 
 const GalleryPage = () => {
     const navigate = useNavigate();
@@ -38,6 +60,7 @@ const GalleryPage = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
+    const [likedPostIds, setLikedPostIds] = useState<Record<string, boolean>>({});
 
     // Aktueller Tab basierend auf URL
     const currentTab = location.pathname === '/gallery/my-posts' ? 1 : 0;
@@ -84,6 +107,7 @@ const GalleryPage = () => {
                     post.id === postId ? response.data : post
                 )
             );
+            setLikedPostIds(prev => ({ ...prev, [postId]: !prev[postId] }));
         } catch (err) {
             console.error('Fehler beim Liken:', err);
         }
@@ -340,8 +364,9 @@ const GalleryPage = () => {
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                             <IconButton
                                                 onClick={() => handleLike(post.id)}
+                                                aria-label="Like"
                                                 sx={{
-                                                    color: post.likeCount > 0 ? '#e91e63' : 'inherit',
+                                                    color: likedPostIds[post.id] ? '#e91e63' : 'inherit',
                                                     '&:hover': {
                                                         backgroundColor: 'rgba(233, 30, 99, 0.1)',
                                                         transform: 'scale(1.1)'
@@ -349,19 +374,8 @@ const GalleryPage = () => {
                                                     transition: 'all 0.2s ease'
                                                 }}
                                             >
-                                                {post.likeCount > 0 ? (
-                                                    <Favorite />
-                                                ) : (
-                                                    <FavoriteBorder />
-                                                )}
+                                                <HeartIcon filled={Boolean(likedPostIds[post.id])} />
                                             </IconButton>
-                                            <Typography
-                                                variant="body2"
-                                                color="text.secondary"
-                                                fontWeight="medium"
-                                            >
-                                                {post.likeCount}
-                                            </Typography>
                                         </Box>
                                     </Tooltip>
                                 </CardActions>
