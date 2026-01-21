@@ -39,6 +39,7 @@ import PostService, { ImagePost, CreatePostData } from '../../../Services/PostSe
 import ActiveUserContext from '../../../Contexts/ActiveUserContext';
 
 const POSTS_PER_PAGE = 10;
+const DESCRIPTION_PREVIEW_LENGTH = 73;
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <Box
@@ -85,6 +86,7 @@ const MyPosts = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
     const [likedPostIds, setLikedPostIds] = useState<Record<string, boolean>>({});
+    const [expandedPosts, setExpandedPosts] = useState<Record<string, boolean>>({});
 
     // Dialog State
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -213,6 +215,10 @@ const MyPosts = () => {
     const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
         setPage(value);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const toggleDescription = (postId: string) => {
+        setExpandedPosts(prev => ({ ...prev, [postId]: !prev[postId] }));
     };
 
     const formatDate = (dateString: string) => {
@@ -461,169 +467,188 @@ const MyPosts = () => {
                         gap: 3,
                         mb: 4
                     }}>
-                        {posts.map((post, index) => (
-                            <Card
-                                key={post.id}
-                                sx={{
-                                    borderRadius: 3,
-                                    overflow: 'hidden',
-                                    transition: 'all 0.3s ease',
-                                    animation: `fadeInUp 0.5s ease ${index * 0.05}s both`,
-                                    '@keyframes fadeInUp': {
-                                        from: {
-                                            opacity: 0,
-                                            transform: 'translateY(20px)'
+                        {posts.map((post, index) => {
+                            const descriptionText = post.description || 'Keine Beschreibung';
+                            const isLong = descriptionText.length > DESCRIPTION_PREVIEW_LENGTH;
+                            const isExpanded = Boolean(expandedPosts[post.id]);
+                            const visibleDescription = isExpanded || !isLong
+                                ? descriptionText
+                                : `${descriptionText.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}…`;
+
+                            return (
+                                <Card
+                                    key={post.id}
+                                    sx={{
+                                        borderRadius: 3,
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s ease',
+                                        animation: `fadeInUp 0.5s ease ${index * 0.05}s both`,
+                                        '@keyframes fadeInUp': {
+                                            from: {
+                                                opacity: 0,
+                                                transform: 'translateY(20px)'
+                                            },
+                                            to: {
+                                                opacity: 1,
+                                                transform: 'translateY(0)'
+                                            }
                                         },
-                                        to: {
-                                            opacity: 1,
-                                            transform: 'translateY(0)'
+                                        '&:hover': {
+                                            transform: 'translateY(-8px)',
+                                            boxShadow: '0 20px 40px rgba(0,0,0,0.15)'
                                         }
-                                    },
-                                    '&:hover': {
-                                        transform: 'translateY(-8px)',
-                                        boxShadow: '0 20px 40px rgba(0,0,0,0.15)'
-                                    }
-                                }}
-                            >
-                                {/* Image Container */}
-                                <Box sx={{
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    '&:hover .image-overlay': {
-                                        opacity: 1
-                                    },
-                                    '&:hover img': {
-                                        transform: 'scale(1.05)'
-                                    }
-                                }}>
-                                    <CardMedia
-                                        component="img"
-                                        height="250"
-                                        image={post.imageUrl}
-                                        alt={post.description || 'Image'}
-                                        sx={{
-                                            transition: 'transform 0.5s ease',
-                                            objectFit: 'cover'
-                                        }}
-                                    />
-                                    {/* Overlay on Hover */}
-                                    <Box
-                                        className="image-overlay"
-                                        sx={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)',
-                                            opacity: 0,
-                                            transition: 'opacity 0.3s ease',
-                                            display: 'flex',
-                                            alignItems: 'flex-end',
-                                            p: 2
-                                        }}
-                                    >
-                                        <Typography variant="body2" color="white" noWrap>
-                                            {post.description}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-
-                                {/* Content */}
-                                <CardContent sx={{ pb: 1 }}>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                        sx={{
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            minHeight: 40
-                                        }}
-                                    >
-                                        {post.description || 'Keine Beschreibung'}
-                                    </Typography>
-
-                                    {/* Date Chip */}
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                                        <Chip
-                                            icon={<CalendarToday sx={{ fontSize: 14 }} />}
-                                            label={formatDate(post.createdAt)}
-                                            size="small"
-                                            variant="outlined"
-                                            sx={{ fontSize: 11 }}
+                                    }}
+                                >
+                                    {/* Image Container */}
+                                    <Box sx={{
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        '&:hover .image-overlay': {
+                                            opacity: 1
+                                        },
+                                        '&:hover img': {
+                                            transform: 'scale(1.05)'
+                                        }
+                                    }}>
+                                        <CardMedia
+                                            component="img"
+                                            height="250"
+                                            image={post.imageUrl}
+                                            alt={post.description || 'Image'}
+                                            sx={{
+                                                transition: 'transform 0.5s ease',
+                                                objectFit: 'cover'
+                                            }}
                                         />
-                                        <Chip
-                                            icon={<Person sx={{ fontSize: 14 }} />}
-                                            label={getAuthorLabel()}
-                                            size="small"
-                                            variant="outlined"
-                                            sx={{ fontSize: 11 }}
-                                        />
-                                    </Box>
-                                </CardContent>
-
-                                {/* Actions */}
-                                <CardActions sx={{
-                                    justifyContent: 'space-between',
-                                    px: 2,
-                                    pb: 2
-                                }}>
-                                    {/* Like Button */}
-                                    <Tooltip title="Gefällt mir">
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <IconButton
-                                                onClick={() => handleLike(post.id)}
-                                                aria-label="Like"
-                                                sx={{
-                                                    color: likedPostIds[post.id] ? '#e91e63' : 'inherit',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(233, 30, 99, 0.1)',
-                                                        transform: 'scale(1.1)'
-                                                    },
-                                                    transition: 'all 0.2s ease'
-                                                }}
-                                            >
-                                                <HeartIcon filled={Boolean(likedPostIds[post.id])} />
-                                            </IconButton>
+                                        {/* Overlay on Hover */}
+                                        <Box
+                                            className="image-overlay"
+                                            sx={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)',
+                                                opacity: 0,
+                                                transition: 'opacity 0.3s ease',
+                                                display: 'flex',
+                                                alignItems: 'flex-end',
+                                                p: 2
+                                            }}
+                                        >
+                                            <Typography variant="body2" color="white" noWrap>
+                                                {post.description}
+                                            </Typography>
                                         </Box>
-                                    </Tooltip>
-
-                                    {/* Edit & Delete Buttons */}
-                                    <Box>
-                                        <Tooltip title="Bearbeiten">
-                                            <IconButton
-                                                onClick={() => openEditDialog(post)}
-                                                sx={{
-                                                    color: '#1565c0',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(21, 101, 192, 0.1)'
-                                                    }
-                                                }}
-                                            >
-                                                <Edit />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Löschen">
-                                            <IconButton
-                                                onClick={() => openDeleteDialog(post.id)}
-                                                sx={{
-                                                    color: '#999',
-                                                    '&:hover': {
-                                                        color: '#f44336',
-                                                        backgroundColor: 'rgba(244, 67, 54, 0.1)'
-                                                    }
-                                                }}
-                                            >
-                                                <Delete />
-                                            </IconButton>
-                                        </Tooltip>
                                     </Box>
-                                </CardActions>
-                            </Card>
-                        ))}
+
+                                    {/* Content */}
+                                    <CardContent sx={{ pb: 1 }}>
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                display: isExpanded ? 'block' : '-webkit-box',
+                                                WebkitLineClamp: isExpanded ? 'unset' : 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                minHeight: 40,
+                                                whiteSpace: isExpanded ? 'normal' : 'unset'
+                                            }}
+                                        >
+                                            {visibleDescription}
+                                        </Typography>
+                                        {isLong && (
+                                            <Button
+                                                size="small"
+                                                onClick={() => toggleDescription(post.id)}
+                                                sx={{ mt: 0.5, px: 0, minWidth: 'auto', textTransform: 'none' }}
+                                            >
+                                                {isExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+                                            </Button>
+                                        )}
+
+                                        {/* Date Chip */}
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                                            <Chip
+                                                icon={<CalendarToday sx={{ fontSize: 14 }} />}
+                                                label={formatDate(post.createdAt)}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ fontSize: 11 }}
+                                            />
+                                            <Chip
+                                                icon={<Person sx={{ fontSize: 14 }} />}
+                                                label={getAuthorLabel()}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ fontSize: 11 }}
+                                            />
+                                        </Box>
+                                    </CardContent>
+
+                                    {/* Actions */}
+                                    <CardActions sx={{
+                                        justifyContent: 'space-between',
+                                        px: 2,
+                                        pb: 2
+                                    }}>
+                                        {/* Like Button */}
+                                        <Tooltip title="Gefällt mir">
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <IconButton
+                                                    onClick={() => handleLike(post.id)}
+                                                    aria-label="Like"
+                                                    sx={{
+                                                        color: likedPostIds[post.id] ? '#e91e63' : 'inherit',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(233, 30, 99, 0.1)',
+                                                            transform: 'scale(1.1)'
+                                                        },
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                >
+                                                    <HeartIcon filled={Boolean(likedPostIds[post.id])} />
+                                                </IconButton>
+                                            </Box>
+                                        </Tooltip>
+
+                                        {/* Edit & Delete Buttons */}
+                                        <Box>
+                                            <Tooltip title="Bearbeiten">
+                                                <IconButton
+                                                    onClick={() => openEditDialog(post)}
+                                                    sx={{
+                                                        color: '#1565c0',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(21, 101, 192, 0.1)'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Edit />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Löschen">
+                                                <IconButton
+                                                    onClick={() => openDeleteDialog(post.id)}
+                                                    sx={{
+                                                        color: '#999',
+                                                        '&:hover': {
+                                                            color: '#f44336',
+                                                            backgroundColor: 'rgba(244, 67, 54, 0.1)'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Delete />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
+                                    </CardActions>
+                                </Card>
+                            );
+                        })}
                     </Box>
 
                     {/* Pagination */}
