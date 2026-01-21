@@ -861,24 +861,28 @@ const GalleryPage = () => {
                 </>
             )}
 
-            {/* Admin: Floating Action Button - Neuer Post */}
-            {isAdmin && (
-                <Fab
-                    color="primary"
-                    onClick={openCreateDialog}
-                    sx={{
-                        position: 'fixed',
-                        bottom: 32,
-                        right: 32,
-                        background: 'linear-gradient(135deg, #1e88e5 0%, #1565c0 100%)',
-                        '&:hover': {
-                            background: 'linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)'
-                        }
-                    }}
-                >
-                    <Add />
-                </Fab>
-            )}
+                    {/* Date Chip */}
+                    <Box
+                      sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}
+                    >
+                      <Chip
+                        icon={<CalendarToday sx={{ fontSize: 14 }} />}
+                        label={formatDate(post.createdAt)}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: 11 }}
+                      />
+                      <Tooltip title={`Autor: ${getAuthorName(post.authorId)}`}>
+                        <Chip
+                          icon={<Person sx={{ fontSize: 14 }} />}
+                          label={getAuthorName(post.authorId)}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontSize: 11 }}
+                        />
+                      </Tooltip>
+                    </Box>
+                  </CardContent>
 
             {/* Admin: Create/Edit Dialog */}
             {isAdmin && (
