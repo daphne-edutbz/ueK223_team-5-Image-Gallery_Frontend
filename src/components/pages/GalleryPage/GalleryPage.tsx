@@ -390,6 +390,14 @@ const GalleryPage = () => {
         });
     };
 
+    const getAuthorName = (authorId: string) => {
+        const author = authors.find(item => item.id === authorId);
+        if (!author) {
+            return 'Unbekannt';
+        }
+        return `${author.firstName} ${author.lastName}`.trim();
+    };
+
     if (loading && posts.length === 0) {
         return (
             <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -681,13 +689,22 @@ const GalleryPage = () => {
                                     </Typography>
 
                                     {/* Date Chip */}
-                                    <Chip
-                                        icon={<CalendarToday sx={{ fontSize: 14 }} />}
-                                        label={formatDate(post.createdAt)}
-                                        size="small"
-                                        variant="outlined"
-                                        sx={{ mt: 1, fontSize: 11 }}
-                                    />
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                                        <Chip
+                                            icon={<CalendarToday sx={{ fontSize: 14 }} />}
+                                            label={formatDate(post.createdAt)}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ fontSize: 11 }}
+                                        />
+                                        <Chip
+                                            icon={<Person sx={{ fontSize: 14 }} />}
+                                            label={getAuthorName(post.authorId)}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ fontSize: 11 }}
+                                        />
+                                    </Box>
                                 </CardContent>
 
                                 {/* Actions */}
