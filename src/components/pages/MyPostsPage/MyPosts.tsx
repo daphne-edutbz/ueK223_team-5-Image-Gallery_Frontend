@@ -223,6 +223,11 @@ const MyPosts = () => {
         });
     };
 
+    const getAuthorLabel = () => {
+        if (!user) return 'Du';
+        return `${user.firstName} ${user.lastName}`.trim() || 'Du';
+    };
+
     // Dialog Handlers
     const openCreateDialog = () => {
         setEditingPost(null);
@@ -542,13 +547,22 @@ const MyPosts = () => {
                                     </Typography>
 
                                     {/* Date Chip */}
-                                    <Chip
-                                        icon={<CalendarToday sx={{ fontSize: 14 }} />}
-                                        label={formatDate(post.createdAt)}
-                                        size="small"
-                                        variant="outlined"
-                                        sx={{ mt: 1, fontSize: 11 }}
-                                    />
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                                        <Chip
+                                            icon={<CalendarToday sx={{ fontSize: 14 }} />}
+                                            label={formatDate(post.createdAt)}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ fontSize: 11 }}
+                                        />
+                                        <Chip
+                                            icon={<Person sx={{ fontSize: 14 }} />}
+                                            label={getAuthorLabel()}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ fontSize: 11 }}
+                                        />
+                                    </Box>
                                 </CardContent>
 
                                 {/* Actions */}
