@@ -77,8 +77,19 @@ describe('Gallery', () => {
     cy.wait(['@getPosts', '@getUsers', '@getUser']);
 
     cy.contains('Galerie').should('be.visible');
-    cy.contains('Sunset over lake').should('be.visible');
-    cy.contains('Mountain ridge').should('be.visible');
-    cy.get('img[alt="Sunset over lake"]').should('be.visible');
+    cy.get('img[alt="Sunset over lake"]')
+      .should('be.visible')
+      .parents('.MuiCard-root')
+      .first()
+      .find('.MuiCardContent-root')
+      .contains('Sunset over lake')
+      .should('be.visible');
+    cy.get('img[alt="Mountain ridge"]')
+      .should('be.visible')
+      .parents('.MuiCard-root')
+      .first()
+      .find('.MuiCardContent-root')
+      .contains('Mountain ridge')
+      .should('be.visible');
   });
 });

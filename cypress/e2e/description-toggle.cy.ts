@@ -69,17 +69,41 @@ describe('Gallery description toggle', () => {
 
     cy.wait(['@getPosts', '@getUsers', '@getUser']);
 
-    cy.contains(longDescription).should('not.exist');
-    cy.contains('Mehr anzeigen').should('be.visible').click();
-    cy.contains(longDescription).should('be.visible');
-    cy.contains('Weniger anzeigen').should('be.visible').click();
-    cy.contains('Weniger anzeigen').should('not.exist');
-
-    cy.contains('Kurzbeschreibung')
-      .parents('div')
+    cy.get(`img[alt="${longDescription}"]`)
+      .should('be.visible')
+      .parents('.MuiCard-root')
       .first()
-      .within(() => {
-        cy.contains('Mehr anzeigen').should('not.exist');
-      });
+      .as('longCard');
+
+    cy.get('@longCard')
+      .find('.MuiCardContent-root')
+      .contains(longDescription)
+      .should('not.exist');
+    cy.get('@longCard')
+      .find('.MuiCardContent-root')
+      .contains('Mehr anzeigen')
+      .should('be.visible')
+      .click();
+    cy.get('@longCard')
+      .find('.MuiCardContent-root')
+      .contains(longDescription)
+      .should('be.visible');
+    cy.get('@longCard')
+      .find('.MuiCardContent-root')
+      .contains('Weniger anzeigen')
+      .should('be.visible')
+      .click();
+    cy.get('@longCard')
+      .find('.MuiCardContent-root')
+      .contains('Weniger anzeigen')
+      .should('not.exist');
+
+    cy.get('img[alt="Kurzbeschreibung"]')
+      .should('be.visible')
+      .parents('.MuiCard-root')
+      .first()
+      .find('.MuiCardContent-root')
+      .contains('Mehr anzeigen')
+      .should('not.exist');
   });
 });
