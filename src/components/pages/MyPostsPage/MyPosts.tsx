@@ -67,9 +67,18 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
 const MyPosts = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user } = useContext(ActiveUserContext);
+    const { user, checkRole } = useContext(ActiveUserContext);
+    const isAdmin = checkRole('ADMIN');
 
     const [posts, setPosts] = useState<ImagePost[]>([]);
+
+    // Admin wird zu /gallery umgeleitet (Admin hat keine "Meine Posts")
+    useEffect(() => {
+        if (isAdmin) {
+            navigate('/gallery', { replace: true });
+        }
+    }, [isAdmin, navigate]);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);

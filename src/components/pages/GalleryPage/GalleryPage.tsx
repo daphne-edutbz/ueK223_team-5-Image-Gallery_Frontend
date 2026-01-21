@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
@@ -21,18 +21,31 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    SelectChangeEvent
+    SelectChangeEvent,
+    Fab,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    Button,
+    Snackbar
 } from '@mui/material';
 import {
     CalendarToday,
     PhotoLibrary,
     Person,
     SortRounded,
-    FilterList
+    FilterList,
+    Add,
+    Edit,
+    Delete,
+    Close
 } from '@mui/icons-material';
-import PostService, { ImagePost } from '../../../Services/PostService';
+import PostService, { ImagePost, CreatePostData } from '../../../Services/PostService';
 import UserService from '../../../Services/UserService';
 import { User } from '../../../types/models/User.model';
+import ActiveUserContext from '../../../Contexts/ActiveUserContext';
 
 const POSTS_PER_PAGE = 12;
 
@@ -66,6 +79,9 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
 const GalleryPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { user, checkRole } = useContext(ActiveUserContext);
+    const isAdmin = checkRole('ADMIN');
+
     const [posts, setPosts] = useState<ImagePost[]>([]);
     const [allPosts, setAllPosts] = useState<ImagePost[]>([]);
     const [loading, setLoading] = useState(true);
@@ -80,7 +96,37 @@ const GalleryPage = () => {
     const [authorFilter, setAuthorFilter] = useState<string>('all');
     const [authors, setAuthors] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
 
-    // Aktueller Tab basierend auf URL
+    // Dialog State (für Admin CRUD)
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [editingPost, setEditingPost] = useState<ImagePost | null>(null);
+    const [formData, setFormData] = useState<CreatePostData>({
+        imageUrl: '',
+        description: ''
+    });
+    const [saving, setSaving] = useState(false);
+
+    // Snackbar State
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: 'success' | 'error';
+    }>({ open: false, message: '', severity: 'success' });
+
+    // Delete Confirmation Dialog State
+    const [deleteDialog, setDeleteDialog] = useState<{
+        open: boolean;
+        postId: string | null;
+    }>({ open: false, postId: null });
+
+    // Form Validation State
+    const [formErrors, setFormErrors] = useState<{
+        imageUrl: string;
+        description: string;
+    }>({ imageUrl: '', description: '' });
+
+    const MAX_DESCRIPTION_LENGTH = 200;
+
+    // Aktueller Tab basierend auf URL (nur für User relevant)
     const currentTab = location.pathname === '/gallery/my-posts' ? 1 : 0;
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -223,6 +269,119 @@ const GalleryPage = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // Admin CRUD Handlers
+    const openCreateDialog = () => {
+        setEditingPost(null);
+        setFormData({ imageUrl: '', description: '' });
+        setFormErrors({ imageUrl: '', description: '' });
+        setDialogOpen(true);
+    };
+
+    const openEditDialog = (post: ImagePost) => {
+        setEditingPost(post);
+        setFormData({
+            imageUrl: post.imageUrl,
+            description: post.description || ''
+        });
+        setFormErrors({ imageUrl: '', description: '' });
+        setDialogOpen(true);
+    };
+
+    const closeDialog = () => {
+        setDialogOpen(false);
+        setEditingPost(null);
+        setFormData({ imageUrl: '', description: '' });
+        setFormErrors({ imageUrl: '', description: '' });
+    };
+
+    const openDeleteDialog = (postId: string) => {
+        setDeleteDialog({ open: true, postId });
+    };
+
+    const closeDeleteDialog = () => {
+        setDeleteDialog({ open: false, postId: null });
+    };
+
+    const isValidUrl = (url: string): boolean => {
+        try {
+            const parsedUrl = new URL(url);
+            return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    };
+
+    const validateForm = (): boolean => {
+        const errors = { imageUrl: '', description: '' };
+        let isValid = true;
+
+        if (!formData.imageUrl.trim()) {
+            errors.imageUrl = 'Bild-URL ist ein Pflichtfeld';
+            isValid = false;
+        } else if (!isValidUrl(formData.imageUrl.trim())) {
+            errors.imageUrl = 'Bitte gib eine gültige URL ein (z.B. https://example.com/bild.jpg)';
+            isValid = false;
+        }
+
+        if ((formData.description || '').length > MAX_DESCRIPTION_LENGTH) {
+            errors.description = `Beschreibung darf maximal ${MAX_DESCRIPTION_LENGTH} Zeichen lang sein`;
+            isValid = false;
+        }
+
+        setFormErrors(errors);
+        return isValid;
+    };
+
+    const handleFormChange = (field: keyof CreatePostData, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSave = async () => {
+        if (!validateForm()) return;
+
+        try {
+            setSaving(true);
+
+            if (editingPost) {
+                await PostService.updatePost(editingPost.id, formData);
+                setSnackbar({ open: true, message: 'Post erfolgreich aktualisiert', severity: 'success' });
+            } else {
+                await PostService.createPost(formData);
+                setSnackbar({ open: true, message: 'Post erfolgreich erstellt', severity: 'success' });
+            }
+
+            closeDialog();
+            loadAllPostsAndAuthors();
+            loadPosts();
+        } catch (err: any) {
+            console.error('Fehler beim Speichern:', err);
+            setSnackbar({ open: true, message: err.response?.data?.message || 'Fehler beim Speichern', severity: 'error' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteDialog.postId) return;
+
+        try {
+            await PostService.deletePost(deleteDialog.postId);
+            setPosts(prevPosts => prevPosts.filter(post => post.id !== deleteDialog.postId));
+            setAllPosts(prevPosts => prevPosts.filter(post => post.id !== deleteDialog.postId));
+            setTotalElements(prev => prev - 1);
+            setSnackbar({ open: true, message: 'Post erfolgreich gelöscht', severity: 'success' });
+
+            if (posts.length === 1 && page > 1) {
+                setPage(page - 1);
+            }
+        } catch (err) {
+            console.error('Fehler beim Löschen:', err);
+            setSnackbar({ open: true, message: 'Fehler beim Löschen des Posts', severity: 'error' });
+        } finally {
+            closeDeleteDialog();
+        }
+    };
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('de-DE', {
             day: '2-digit',
@@ -297,40 +456,46 @@ const GalleryPage = () => {
                     {totalElements} {totalElements === 1 ? 'Bild' : 'Bilder'} in der Sammlung
                 </Typography>
 
-                {/* Navigation Tabs */}
-                <Tabs
-                    value={currentTab}
-                    onChange={handleTabChange}
-                    centered
-                    sx={{
-                        '& .MuiTabs-indicator': {
-                            backgroundColor: 'white',
-                            height: 3,
-                            borderRadius: 2
-                        }
-                    }}
-                >
-                    <Tab
-                        icon={<PhotoLibrary />}
-                        label="Alle Posts"
+                {/* Navigation Tabs - nur für User, Admin sieht nur "Posts" */}
+                {!isAdmin ? (
+                    <Tabs
+                        value={currentTab}
+                        onChange={handleTabChange}
+                        centered
                         sx={{
-                            color: 'rgba(255,255,255,0.7)',
-                            '&.Mui-selected': { color: 'white' },
-                            fontWeight: 'bold',
-                            minWidth: 140
+                            '& .MuiTabs-indicator': {
+                                backgroundColor: 'white',
+                                height: 3,
+                                borderRadius: 2
+                            }
                         }}
-                    />
-                    <Tab
-                        icon={<Person />}
-                        label="Meine Posts"
-                        sx={{
-                            color: 'rgba(255,255,255,0.7)',
-                            '&.Mui-selected': { color: 'white' },
-                            fontWeight: 'bold',
-                            minWidth: 140
-                        }}
-                    />
-                </Tabs>
+                    >
+                        <Tab
+                            icon={<PhotoLibrary />}
+                            label="Alle Posts"
+                            sx={{
+                                color: 'rgba(255,255,255,0.7)',
+                                '&.Mui-selected': { color: 'white' },
+                                fontWeight: 'bold',
+                                minWidth: 140
+                            }}
+                        />
+                        <Tab
+                            icon={<Person />}
+                            label="Meine Posts"
+                            sx={{
+                                color: 'rgba(255,255,255,0.7)',
+                                '&.Mui-selected': { color: 'white' },
+                                fontWeight: 'bold',
+                                minWidth: 140
+                            }}
+                        />
+                    </Tabs>
+                ) : (
+                    <Typography variant="body1" sx={{ opacity: 0.9, mt: 1 }}>
+                        Admin-Ansicht: Alle Posts verwalten
+                    </Typography>
+                )}
             </Box>
 
             {/* Filter und Sortierung */}
@@ -527,7 +692,7 @@ const GalleryPage = () => {
 
                                 {/* Actions */}
                                 <CardActions sx={{
-                                    justifyContent: 'flex-start',
+                                    justifyContent: isAdmin ? 'space-between' : 'flex-start',
                                     px: 2,
                                     pb: 2
                                 }}>
@@ -550,6 +715,39 @@ const GalleryPage = () => {
                                             </IconButton>
                                         </Box>
                                     </Tooltip>
+
+                                    {/* Admin Edit & Delete Buttons */}
+                                    {isAdmin && (
+                                        <Box>
+                                            <Tooltip title="Bearbeiten">
+                                                <IconButton
+                                                    onClick={() => openEditDialog(post)}
+                                                    sx={{
+                                                        color: '#1565c0',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(21, 101, 192, 0.1)'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Edit />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Löschen">
+                                                <IconButton
+                                                    onClick={() => openDeleteDialog(post.id)}
+                                                    sx={{
+                                                        color: '#999',
+                                                        '&:hover': {
+                                                            color: '#f44336',
+                                                            backgroundColor: 'rgba(244, 67, 54, 0.1)'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Delete />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
+                                    )}
                                 </CardActions>
                             </Card>
                         ))}
@@ -618,6 +816,175 @@ const GalleryPage = () => {
                     )}
                 </>
             )}
+
+            {/* Admin: Floating Action Button - Neuer Post */}
+            {isAdmin && (
+                <Fab
+                    color="primary"
+                    onClick={openCreateDialog}
+                    sx={{
+                        position: 'fixed',
+                        bottom: 32,
+                        right: 32,
+                        background: 'linear-gradient(135deg, #1e88e5 0%, #1565c0 100%)',
+                        '&:hover': {
+                            background: 'linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)'
+                        }
+                    }}
+                >
+                    <Add />
+                </Fab>
+            )}
+
+            {/* Admin: Create/Edit Dialog */}
+            {isAdmin && (
+                <Dialog
+                    open={dialogOpen}
+                    onClose={closeDialog}
+                    maxWidth="sm"
+                    fullWidth
+                    PaperProps={{
+                        sx: { borderRadius: 3 }
+                    }}
+                >
+                    <DialogTitle sx={{
+                        background: 'linear-gradient(135deg, #1e88e5 0%, #1565c0 100%)',
+                        color: 'white',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        {editingPost ? 'Post bearbeiten' : 'Neuer Post'}
+                        <IconButton onClick={closeDialog} sx={{ color: 'white' }}>
+                            <Close />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ pt: 3 }}>
+                        <TextField
+                            label="Bild-URL"
+                            fullWidth
+                            value={formData.imageUrl}
+                            onChange={(e) => {
+                                handleFormChange('imageUrl', e.target.value);
+                                if (formErrors.imageUrl) {
+                                    setFormErrors(prev => ({ ...prev, imageUrl: '' }));
+                                }
+                            }}
+                            placeholder="https://example.com/bild.jpg"
+                            sx={{ mb: 3, mt: 1 }}
+                            required
+                            error={!!formErrors.imageUrl}
+                            helperText={formErrors.imageUrl}
+                        />
+                        <TextField
+                            label="Beschreibung"
+                            fullWidth
+                            multiline
+                            rows={3}
+                            value={formData.description}
+                            onChange={(e) => {
+                                handleFormChange('description', e.target.value);
+                                if (formErrors.description) {
+                                    setFormErrors(prev => ({ ...prev, description: '' }));
+                                }
+                            }}
+                            placeholder="Beschreibe das Bild..."
+                            error={!!formErrors.description}
+                            helperText={formErrors.description || `${(formData.description || '').length}/${MAX_DESCRIPTION_LENGTH} Zeichen`}
+                        />
+
+                        {/* Preview */}
+                        {formData.imageUrl && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Vorschau:
+                                </Typography>
+                                <Box
+                                    component="img"
+                                    src={formData.imageUrl}
+                                    alt="Preview"
+                                    sx={{
+                                        width: '100%',
+                                        maxHeight: 200,
+                                        objectFit: 'cover',
+                                        borderRadius: 2,
+                                        border: '1px solid #ddd'
+                                    }}
+                                    onError={(e: any) => {
+                                        e.target.style.display = 'none';
+                                    }}
+                                />
+                            </Box>
+                        )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 3, pt: 0 }}>
+                        <Button onClick={closeDialog} color="inherit">
+                            Abbrechen
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={handleSave}
+                            disabled={saving || !formData.imageUrl.trim()}
+                            sx={{
+                                background: 'linear-gradient(135deg, #1e88e5 0%, #1565c0 100%)',
+                                px: 4
+                            }}
+                        >
+                            {saving ? <CircularProgress size={24} color="inherit" /> : 'Speichern'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
+
+            {/* Admin: Delete Confirmation Dialog */}
+            {isAdmin && (
+                <Dialog
+                    open={deleteDialog.open}
+                    onClose={closeDeleteDialog}
+                    PaperProps={{
+                        sx: { borderRadius: 3, p: 1 }
+                    }}
+                >
+                    <DialogTitle sx={{ pb: 1 }}>
+                        Post löschen?
+                    </DialogTitle>
+                    <DialogContent>
+                        <Typography variant="body2" color="text.secondary">
+                            Bist du sicher, dass du diesen Post löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions sx={{ px: 3, pb: 2 }}>
+                        <Button onClick={closeDeleteDialog} color="inherit">
+                            Abbrechen
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={confirmDelete}
+                            color="error"
+                            sx={{ px: 3 }}
+                        >
+                            Löschen
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
+
+            {/* Snackbar für Benachrichtigungen */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 };
