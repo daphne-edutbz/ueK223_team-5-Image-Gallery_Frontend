@@ -697,13 +697,15 @@ const GalleryPage = () => {
                                             variant="outlined"
                                             sx={{ fontSize: 11 }}
                                         />
-                                        <Chip
-                                            icon={<Person sx={{ fontSize: 14 }} />}
-                                            label={getAuthorName(post.authorId)}
-                                            size="small"
-                                            variant="outlined"
-                                            sx={{ fontSize: 11 }}
-                                        />
+                                        <Tooltip title={`Autor: ${getAuthorName(post.authorId)}`}>
+                                            <Chip
+                                                icon={<Person sx={{ fontSize: 14 }} />}
+                                                label={getAuthorName(post.authorId)}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ fontSize: 11 }}
+                                            />
+                                        </Tooltip>
                                     </Box>
                                 </CardContent>
 
