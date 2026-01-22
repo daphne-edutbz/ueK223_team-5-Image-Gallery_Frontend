@@ -6,16 +6,27 @@ import AuthorityService from '../Services/AuthorityService';
 import { Button } from '@mui/material';
 import authorities from '../config/Authorities';
 
+/**
+ * Props für PrivateRoute Komponente
+ * @property element - Die zu rendernde React-Komponente
+ * @property requiredAuths - Benötigte Berechtigungen für Zugriff
+ */
 interface Props {
   element: React.ReactElement;
   requiredAuths: authorities[];
 }
 
+/** JWT Token Struktur */
 type JWTType = {
   iss: string;
   exp: number;
 };
 
+/**
+ * PrivateRoute schützt Routen vor unautorisiertem Zugriff.
+ * Prüft JWT-Token Gültigkeit und erforderliche Berechtigungen.
+ * Leitet bei fehlendem Login zu /login, bei fehlenden Rechten zu /unauthorized.
+ */
 const PrivateRoute: React.FC<Props> = ({
   requiredAuths: requiredAuths,
   element: RouteComponent,
