@@ -100,6 +100,8 @@ Es sind **keine weiteren Konfigurationen notwendig**.
 | URL                  | Funktion                                 |
 | -------------------- | ---------------------------------------- |
 | `/gallery`     | Alle Image-Posts bearbeiten oder löschen |
+| `/user`     | Alle Users bearbeiten oder löschen. Neuen User erstellen |
+
 
 
 
