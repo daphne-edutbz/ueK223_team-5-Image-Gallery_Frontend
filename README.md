@@ -46,7 +46,7 @@ Alle Test-User haben das Passwort: `1234`
 
 ## Tests ausführen
 ### Cypress
-Cypress: `Yarn cypress run`
+folgendes im Fronted ausführen:`yarn cypress run`
 ---
 ### Postman-Tests
 
