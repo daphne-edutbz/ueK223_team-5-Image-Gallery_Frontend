@@ -1,7 +1,14 @@
 import api from "../config/Api";
 
-const roleSet = new Set();
-
+/**
+ * Service für Rollen-bezogene API-Aufrufe
+ */
 const RoleService = {
-  findAll: () => api.get("/roles")}
+  /**
+   * Holt alle verfügbaren Rollen vom Backend
+   * @returns Liste aller Rollen
+   */
+  findAll: () => api.get("/roles"),
+};
+
 export default RoleService;
