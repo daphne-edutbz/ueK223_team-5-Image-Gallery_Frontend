@@ -72,6 +72,9 @@ describe('User edit post', () => {
     cy.wait('@getPosts');
 
     cy.contains('Post erfolgreich').should('be.visible');
-    cy.contains('Neue Beschreibung').should('be.visible');
+    cy.get('.MuiCardContent-root')
+      .first()
+      .contains('Neue Beschreibung')
+      .should('be.visible');
   });
 });
