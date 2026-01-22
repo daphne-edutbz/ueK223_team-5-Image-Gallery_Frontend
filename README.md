@@ -1,96 +1,113 @@
-# uk223 Skeleton
+# OurSpace – Image Gallery (üK 223)
 
-## Quick Links
-- Homepage: http://localhost:3000
-- Login: http://localhost:3000/login
-- User Component: http://localhost:3000/users
+## Voraussetzungen
 
-## Prerequisites
+## Backend starten
+**Docker mit PostgreSQL (Port 5432) muss laufen**
 
-Before you start, make sure you have the following installed on your computer:
-
-- **Node.js** (version 16 or higher)
-  - Download from: https://nodejs.org/
-  - To check if installed, open a terminal and run: `node --version`
-- **Yarn** (package manager)
-  - After installing Node.js, install Yarn by running: `npm install -g yarn`
-  - To check if installed, run: `yarn --version`
-- **Git** (version control)
-  - Download from: https://git-scm.com/
-  - To check if installed, run: `git --version`
-
-## Setup Instructions
-
-### 1. Clone the Repository
-
-Open a terminal (Command Prompt, PowerShell, or Terminal) and run:
-
-```bash
-git clone <repository-url>
-cd react_frontend
+```powershell
+cd ueK223_team-5-Image-Gallery_Backend
+.\gradlew bootRun
 ```
 
-### 2. Install Dependencies
+Backend läuft unter:
 
-Install all required packages by running:
+http://localhost:8080/
 
-```bash
+Swagger UI:
+
+http://localhost:8080/swagger-ui/index.html#/
+
+
+## Frontend starten
+**Backend & Docker müssen bereits laufen**
+
+
+``` powershell
+cd ueK223_team-5-Image-Gallery_Frontend
 yarn install
-```
-
-This will download all the libraries and tools needed for the project.
-
-### 3. Start the Development Server
-
-Run the following command to start the application:
-
-```bash
 yarn dev
 ```
 
-The application will open at http://localhost:3000
+Frontend läuft über: http://localhost:3000/
 
-### 4. Stop the Development Server
+## Login Daten und Rollen
 
-To stop the server, press `Ctrl + C` in the terminal.
+Alle Test-User haben das Passwort: `1234`
 
-## Common Commands
+| Rolle     | E-Mail                                                        | Beschreibung                  |
+| --------- | ------------------------------------------------------------- | ----------------------------- |
+| **Admin** | [admin@example.com](mailto:admin@example.com)                 | Admin mit erweiterten Rechten |
+| **User**  | [olivia.parker@example.com](mailto:olivia.parker@example.com) | Normaler eingeloggter User    |
+| User      | [daniel.brooks@example.com](mailto:daniel.brooks@example.com) | Normaler User                 |
+| User      | [mia.wallace@example.com](mailto:mia.wallace@example.com)     | Normaler User                 |
+| User      | [emma.wilson@example.com](mailto:emma.wilson@example.com)     | Normaler User                 |
 
-- `yarn dev` - Start the development server
-- `yarn build` - Build the application for production
-- `yarn test` - Run tests
-- `yarn preview` - Preview the production build
 
-## Project Structure
+## Tests ausführen
+### Cypress
+folgendes im Fronted ausführen:`yarn cypress run`
+---
+### Postman-Tests
 
-```
-react_frontend/
-├── src/               # Source code
-│   ├── components/    # React components
-│   ├── pages/         # Page components
-│   └── ...
-├── public/            # Static files
-├── package.json       # Project dependencies
-└── README.md          # This file
-```
+Es wurden **32 Postman-Tests** erstellt, um sicherzustellen, dass die Applikation korrekt funktioniert.
 
-## Troubleshooting
+Getestet wurden dabei:
+- **Gültige Request-Flows** (Happy Paths)  
+- **Fehlerfälle** (Exceptions)  
+- **Rollen- und Berechtigungsprüfungen**
 
-### Port Already in Use
+Alle Tests sollten erfolgreich durchlaufen.
 
-If you see an error that port 3000 is already in use:
-1. Stop any other applications running on port 3000
-2. Or change the port in your configuration
+### Import der Postman-Tests
 
-### Installation Errors
+Die exportierten Postman-Tests befinden sich im Backend-Projekt im Ordner `Postman`.  
 
-If you encounter errors during `yarn install`:
-1. Delete the `node_modules` folder and `yarn.lock` file
-2. Run `yarn install` again
-3. Make sure you have the correct Node.js version (16+)
+Enthalten ist eine **JSON-Datei**, die Folgendes beinhaltet:
+- Collections  
+- Environments  
+- Variablen  
+- Authentifizierung
 
-### Need Help?
+**Anleitung zum Import:**  
+1. Postman öffnen  
+2. Auf **Import** klicken  
+3. Die JSON-Datei auswählen und importieren  
 
-If you're stuck, ask your instructor or check the project documentation.
+Es sind **keine weiteren Konfigurationen notwendig**.
 
-## Components
+![OurSpace Image Gallery](https://github.com/user-attachments/assets/4df950f0-368c-40d2-8562-bc9b85dbcb54)
+
+## Frontend-URLs & gruppenspezifische Funktionalitäten
+
+### Öffentliche Seiten
+
+| URL      | Beschreibung         |
+| -------- | -------------------- |
+| `/`      | Öffentliche Homepage |
+| `/login` | Login-Seite          |
+
+
+### Eingeloggte User (ROLE_USER)
+| URL                 | Funktion                                             |
+| ------------------- | ---------------------------------------------------- |
+| `/gallery`          | Image Gallery anzeigen (Pagination, Likes)           |
+| `/gallery/my-posts` | Eigene Image-Posts erstellen, bearbeiten und löschen |
+
+
+
+### Admin (ROLE_ADMIN)
+| URL                  | Funktion                                 |
+| -------------------- | ---------------------------------------- |
+| `/gallery`     | Alle Image-Posts bearbeiten oder löschen |
+| `/user`     | Alle Users bearbeiten oder löschen. Neuen User erstellen |
+
+
+
+
+
+
+
+
+
+
