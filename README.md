@@ -45,7 +45,7 @@ Alle Test-User haben das Passwort: `1234`
 
 
 ## Tests ausführen
-
+Cypress: `Yarn cypress run`
 
 
 
