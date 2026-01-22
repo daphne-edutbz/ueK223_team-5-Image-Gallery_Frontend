@@ -76,6 +76,7 @@ Enthalten ist eine **JSON-Datei**, die Folgendes beinhaltet:
 
 Es sind **keine weiteren Konfigurationen notwendig**.
 
+![OurSpace Image Gallery](https://github.com/user-attachments/assets/4df950f0-368c-40d2-8562-bc9b85dbcb54)
 
 ## Frontend-URLs & gruppenspezifische Funktionalitäten
 
