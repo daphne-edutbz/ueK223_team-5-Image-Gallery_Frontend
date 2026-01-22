@@ -101,11 +101,19 @@ const Login = () => {
 
           <Alert severity="info" sx={{ mb: 3 }}>
             <Typography variant="body2" fontWeight="bold">
-              Demo Login:
+              Demo Login (Admin):
             </Typography>
             <Typography variant="body2">E-Mail: admin@example.com</Typography>
             <Typography variant="body2">Passwort: 1234</Typography>
           </Alert>
+
+            <Alert severity="success" sx={{ mb: 3 }}>
+                <Typography variant="body2" fontWeight="bold">
+                    Demo Login (User):
+                </Typography>
+                <Typography variant="body2">E-Mail: daniel.brooks@example.com</Typography>
+                <Typography variant="body2">Passwort: 1234</Typography>
+            </Alert>
 
           {/* Error Message */}
           {errorMessage && (
