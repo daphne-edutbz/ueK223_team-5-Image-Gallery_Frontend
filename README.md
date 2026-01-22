@@ -45,8 +45,36 @@ Alle Test-User haben das Passwort: `1234`
 
 
 ## Tests ausführen
+### Cypress
 Cypress: `Yarn cypress run`
+---
+### Postman-Tests
 
+Es wurden **32 Postman-Tests** erstellt, um sicherzustellen, dass die Applikation korrekt funktioniert.
+
+Getestet wurden dabei:
+- **Gültige Request-Flows** (Happy Paths)  
+- **Fehlerfälle** (Exceptions)  
+- **Rollen- und Berechtigungsprüfungen**
+
+Alle Tests sollten erfolgreich durchlaufen.
+
+### Import der Postman-Tests
+
+Die exportierten Postman-Tests befinden sich im Backend-Projekt im Ordner `Postman`.  
+
+Enthalten ist eine **JSON-Datei**, die Folgendes beinhaltet:
+- Collections  
+- Environments  
+- Variablen  
+- Authentifizierung
+
+**Anleitung zum Import:**  
+1. Postman öffnen  
+2. Auf **Import** klicken  
+3. Die JSON-Datei auswählen und importieren  
+
+Es sind **keine weiteren Konfigurationen notwendig**.
 
 
 ## Frontend-URLs & gruppenspezifische Funktionalitäten
