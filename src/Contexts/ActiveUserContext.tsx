@@ -7,7 +7,7 @@ import UserService from "../Services/UserService";
 import { User } from "../types/models/User.model";
 import { Nullable } from "../types/Nullable";
 import * as jwt from "jsonwebtoken";
-import {JwtPayload} from "jsonwebtoken";
+import { JwtPayload } from "jsonwebtoken";
 
 /**
  * USER_DATA_LOCAL_STORAGE_KEY defines the localStorageKey in which the
@@ -94,7 +94,7 @@ export const ActiveUserContextProvider = ({
     setUser(updatedUser);
     localStorage.setItem(
       USER_DATA_LOCAL_STORAGE_KEY,
-      JSON.stringify(updatedUser)
+      JSON.stringify(updatedUser),
     );
   };
 
@@ -135,7 +135,7 @@ export const ActiveUserContextProvider = ({
    */
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response: any = await api.post("user/login", { email, password });
+      const response: any = await api.post("/user/login", { email, password });
       const authHeader: string | undefined =
         response?.headers?.authorization || response?.headers?.Authorization;
       if (!authHeader) {

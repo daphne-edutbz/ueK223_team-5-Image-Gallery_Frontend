@@ -187,9 +187,9 @@ const GalleryPage = () => {
       const allUsers: User[] = usersResponse.data;
 
       // Extrahiere eindeutige Autor-IDs aus Posts
-      const uniqueAuthorIds = [
-        ...new Set(allPostsData.map((post) => post.authorId)),
-      ];
+      const uniqueAuthorIds = Array.from(
+        new Set(allPostsData.map((post) => post.authorId)),
+      );
 
       // Mappe Autor-IDs zu Benutzernamen
       const authorsWithNames = uniqueAuthorIds

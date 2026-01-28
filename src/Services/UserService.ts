@@ -1,5 +1,5 @@
-import api from '../config/Api';
-import { User } from '../types/models/User.model';
+import api from "../config/Api";
+import { User } from "../types/models/User.model";
 
 /**
  * Service für alle User-bezogenen API-Aufrufe
@@ -29,7 +29,7 @@ const UserService = {
    * @returns Erstellter User
    */
   addUser: (user: User) => {
-    return api.post('/user/registerUser', user).then((res) => {
+    return api.post("/user/registerUser", user).then((res) => {
       return res.data;
     });
   },

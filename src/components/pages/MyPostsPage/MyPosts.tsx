@@ -280,7 +280,7 @@ const MyPosts = () => {
         }
 
         // Beschreibung: maximale Länge
-        if (formData.description.length > MAX_DESCRIPTION_LENGTH) {
+        if ((formData.description || '').length > MAX_DESCRIPTION_LENGTH) {
             errors.description = `Beschreibung darf maximal ${MAX_DESCRIPTION_LENGTH} Zeichen lang sein`;
             isValid = false;
         }
@@ -785,7 +785,7 @@ const MyPosts = () => {
                         }}
                         placeholder="Beschreibe dein Bild..."
                         error={!!formErrors.description}
-                        helperText={formErrors.description || `${formData.description.length}/${MAX_DESCRIPTION_LENGTH} Zeichen`}
+                        helperText={formErrors.description || `${(formData.description || '').length}/${MAX_DESCRIPTION_LENGTH} Zeichen`}
                     />
 
                     {/* Preview */}
