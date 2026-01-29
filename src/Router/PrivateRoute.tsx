@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
-import * as jwt from 'jsonwebtoken';
+import { jwtDecode } from "jwt-decode";
 import ActiveUserContext from '../Contexts/ActiveUserContext';
 import AuthorityService from '../Services/AuthorityService';
 import { Button } from '@mui/material';
@@ -44,7 +44,7 @@ const PrivateRoute: React.FC<Props> = ({
       return false;
     }
     tokenString = tokenString.replace('Bearer ', '');
-    const token: JWTType = jwt.decode(tokenString) as JWTType;
+    const token = jwtDecode<JWTType>(tokenString);
     // Check if token does not exist or doesn't have an expiration claim or is expired.
     return !(!token || !token.exp || token.exp < Date.now() / 1000);
 
