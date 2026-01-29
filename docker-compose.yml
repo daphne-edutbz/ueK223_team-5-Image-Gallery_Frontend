@@ -4,6 +4,9 @@ services:
   frontend:
     restart: unless-stopped
     image: image-gallery-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: frontend
     depends_on:
       - backend
